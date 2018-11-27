@@ -34,7 +34,7 @@ RUN dpkg --add-architecture i386 && apt update -qq > /dev/null && \
         build-essential ccache git libncurses5:i386 libstdc++6:i386 libgtk2.0-0:i386 \
         libpangox-1.0-0:i386 libpangoxft-1.0-0:i386 libidn11:i386 python2.7 \
         python2.7-dev openjdk-8-jdk unzip zlib1g-dev zlib1g:i386 python3 python3-dev time \
-     && apt-get remove libpython2.7-minimal --yes && apt install -qq --yes python3-virtualenv python3-pip
+     && apt install -qq --yes python3-virtualenv python3-pip
 
 # prepares non root env
 RUN useradd --create-home --shell /bin/bash ${USER}
