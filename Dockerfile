@@ -55,12 +55,13 @@ ARG CRYSTAX_NDK_VERSION=10.3.2
 ARG CRYSTAX_HASH=7305b59a3cee178a58eeee86fe78ad7bef7060c6d22cdb027e8d68157356c4c0
 
 # installs buildozer and dependencies
-RUN pip3 install --user Cython==0.28.5 buildozer==0.37 sh
+RUN pip3 install --user Cython==0.28.5 buildozer==0.34 sh
 # calling buildozer adb command should trigger SDK/NDK first install and update
 # but it requires a buildozer.spec file
-RUN cd /tmp/ && buildozer init && buildozer android adb -- version || ls -la /home/user/.buildozer/android/platform/android-sdk-20/* && ln -s /home/user/.buildozer/android/platform/android-sdk-20/tools /home/user/.buildozer/android/platform/android-sdk-20/tools.save && buildozer android adb --version \
+RUN cd /tmp/ && buildozer init && buildozer android adb -- version \
     # fix https://github.com/kivy/buildozer/issues/751
     && cd ~/.buildozer/android/platform/&& rm -vf android-ndk*.tar* android-sdk*.tgz apache-ant*.tar.gz \
+    && pip install buildozer==0.37 --upgrade \
     && cd - && cd ${WORK_DIR} \
     && set -ex \
   && wget https://www.crystax.net/download/crystax-ndk-${CRYSTAX_NDK_VERSION}-linux-x86_64.tar.xz?interactive=true -O ~/.buildozer/crystax-${CRYSTAX_NDK_VERSION}.tar.xz \
