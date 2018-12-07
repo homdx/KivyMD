@@ -34,10 +34,7 @@ RUN dpkg --add-architecture i386 && apt update -qq > /dev/null && \
         build-essential ccache git libncurses5:i386 libstdc++6:i386 libgtk2.0-0:i386 \
         libpangox-1.0-0:i386 libpangoxft-1.0-0:i386 libidn11:i386 python2.7 \
         python2.7-dev openjdk-8-jdk unzip zlib1g-dev zlib1g:i386 python3 python3-dev time \
-   &&  apt-get remove python3.6 python3.6-dev --yes \
-   &&  apt-get install software-properties-common --yes \
-   && add-apt-repository ppa:deadsnakes/ppa --yes \
-   && apt-get install python3.5-dev --yes
+     && apt install -qq --yes python3-virtualenv python3-pip
 
 # prepares non root env
 RUN useradd --create-home --shell /bin/bash ${USER}
@@ -58,35 +55,30 @@ ARG CRYSTAX_NDK_VERSION=10.3.2
 ARG CRYSTAX_HASH=7305b59a3cee178a58eeee86fe78ad7bef7060c6d22cdb027e8d68157356c4c0
 
 # installs buildozer and dependencies
-RUN pip install --user Cython==0.25.2 buildozer==0.34
+RUN pip3 install --user Cython==0.28.5 buildozer==0.34 sh
 # calling buildozer adb command should trigger SDK/NDK first install and update
 # but it requires a buildozer.spec file
 RUN cd /tmp/ && buildozer init && buildozer android adb -- version \
+    # fix https://github.com/kivy/buildozer/issues/751
     && cd ~/.buildozer/android/platform/&& rm -vf android-ndk*.tar* android-sdk*.tgz apache-ant*.tar.gz \
+    && pip install buildozer==0.37 --upgrade \
     && cd - && cd ${WORK_DIR} \
-    # fixes source and target JDK version, refs https://github.com/kivy/buildozer/issues/625
-    && sed s/'name="java.source" value="1.5"'/'name="java.source" value="7"'/ -i ${HOME_DIR}/.buildozer/android/platform/android-sdk-20/tools/ant/build.xml \ 
-    && sed s/'name="java.target" value="1.5"'/'name="java.target" value="7"'/ -i ${HOME_DIR}/.buildozer/android/platform/android-sdk-20/tools/ant/build.xml \
     && set -ex \
   && wget https://www.crystax.net/download/crystax-ndk-${CRYSTAX_NDK_VERSION}-linux-x86_64.tar.xz?interactive=true -O ~/.buildozer/crystax-${CRYSTAX_NDK_VERSION}.tar.xz \
   && cd ~/.buildozer/ \
   && echo "${CRYSTAX_HASH}  crystax-${CRYSTAX_NDK_VERSION}.tar.xz" | sha256sum -c \
   && time tar -xf crystax-${CRYSTAX_NDK_VERSION}.tar.xz && rm ~/.buildozer/crystax-${CRYSTAX_NDK_VERSION}.tar.xz
 
-
 COPY . app
 
 RUN sudo chown user ${WORK_DIR}/app -Rv
 
-#USER root
-#RUN chown user /home/user/ -R && chown -R user /home/user/hostcwd
-
-#USER ${USER}
+USER ${USER}
 
 RUN echo '-----Python 3 ----' && cd app/demos/kitchen_sink/bin/python3/ \
     && cp -f buildozer.spec ../../ && cd .. && cd .. && time buildozer android debug || echo "Fix build apk" \
     && sudo cp -v ${WORK_DIR}/app/demos/kitchen_sink/bin/python3/kitchen_sink-*-debug.apk ${WORK_DIR}/py3-kitchen_sink.apk
-
+#
 RUN echo '-----Python 2 -----' && cd app/demos/kitchen_sink/bin/python2/ && time buildozer android debug || echo "Fix build apk" \ 
     && sudo cp -v ${WORK_DIR}/app/demos/kitchen_sink/bin/python2/KivyMDKitchenSink-*.apk ${WORK_DIR}/py2-kitchen_sink.apk && date
 
